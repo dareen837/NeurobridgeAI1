@@ -1,176 +1,140 @@
 import streamlit as st
 import pandas as pd
 
-# =========================
-# PAGE CONFIG + UI STYLE
-# =========================
 st.set_page_config(page_title="NeuroBridge AI", layout="wide")
 
+# =========================
+# 🎨 STYLE (Hospital UI)
+# =========================
 st.markdown("""
 <style>
-.main {
-    background-color: #0f172a;
-    color: white;
+body {
+    background-color: #f5f7fb;
 }
-.stTabs [data-baseweb="tab"] {
-    font-size: 18px;
-    padding: 10px;
+
+.main {
+    background-color: #f5f7fb;
+}
+
+.block-container {
+    padding-top: 2rem;
+}
+
+h1, h2, h3 {
+    color: #1f3b57;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 2px 10px rgba(0,0,0,0.08);
 }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# FAKE PATIENT DATABASE
+# DATA
 # =========================
 patients = {
-    "Ahmed": {
-        "risk": "Elevated",
-        "memory": [85, 78, 70],
-        "attention": [90, 85, 80],
-        "mri": "Mild hippocampal atrophy"
-    },
-    "Sara": {
-        "risk": "Monitor",
-        "memory": [88, 84, 80],
-        "attention": [92, 90, 88],
-        "mri": "No acute abnormalities"
-    },
-    "Ali": {
-        "risk": "Low",
-        "memory": [90, 89, 88],
-        "attention": [95, 94, 93],
-        "mri": "Normal brain structure"
-    }
+    "Ahmed": {"risk": "🔴 Elevated", "memory": [85, 78, 70]},
+    "Sara": {"risk": "🟡 Monitor", "memory": [88, 84, 80]},
+    "Ali": {"risk": "🟢 Low", "memory": [90, 89, 88]},
 }
 
 # =========================
-# SIMPLE RISK ENGINE
-# =========================
-def get_risk(memory_scores):
-    if memory_scores[-1] < 75:
-        return "Elevated"
-    elif memory_scores[-1] < 85:
-        return "Monitor"
-    return "Low"
-
-# =========================
-# AI EXPLANATION (SIMULATED)
-# =========================
-def ai_explanation(symptoms, score, mri):
-    return f"""
-Cognitive analysis based on input:
-
-- Symptoms: {', '.join(symptoms) if symptoms else 'None'}
-- Cognitive score: {score}
-- MRI: {mri}
-
-Interpretation:
-Mild changes in cognitive performance may indicate early cognitive drift.
-
-Note: This is NOT a diagnosis. Clinical follow-up is recommended if symptoms persist.
-"""
-
-# =========================
-# AI INSIGHT FOR DOCTOR
-# =========================
-def ai_insight(name):
-    p = patients[name]
-    decline = p["memory"][0] - p["memory"][-1]
-    return f"Memory decline of {decline}% detected over time. Pattern suggests gradual cognitive drift."
-
-# =========================
-# UI HEADER
+# HEADER
 # =========================
 st.title("🧠 NeuroBridge AI")
-st.caption("Clinical Cognitive Monitoring System (Prototype)")
+st.caption("Clinical Cognitive Monitoring System")
 
-tab1, tab2 = st.tabs(["👩‍⚕️ Patient View", "👨‍⚕️ Doctor Dashboard"])
+st.divider()
 
 # =========================
-# PATIENT VIEW
+# SIDEBAR (LIKE REAL HOSPITAL SYSTEM)
 # =========================
-with tab1:
-    st.header("Patient Cognitive Check")
-
-    name = st.selectbox("Select Patient", list(patients.keys()))
-
-    symptoms = st.multiselect(
-        "Symptoms",
-        ["Memory loss", "Confusion", "Difficulty focusing"]
-    )
-
-    score = st.slider("Cognitive Score", 0, 100, 85)
-
-    mri_text = st.text_area("MRI Report (text)", patients[name]["mri"])
-
-    if st.button("Analyze Patient"):
-        risk = get_risk(patients[name]["memory"])
-
-        st.subheader("📊 Result")
-        st.metric("Risk Level", risk)
-
-        if risk == "Low":
-            st.success("Stable cognitive status. Continue routine monitoring.")
-        elif risk == "Monitor":
-            st.warning("Mild changes detected. Follow-up recommended.")
-        else:
-            st.error("Significant decline detected. Clinical evaluation advised.")
-
-        st.markdown("### 💬 AI Explanation")
-        st.info(ai_explanation(symptoms, score, mri_text))
-
-        st.markdown("### 📅 Next Step")
-        st.write("Recommended follow-up in 3 months")
+with st.sidebar:
+    st.header("🏥 Navigation")
+    page = st.radio("Go to", ["Doctor Dashboard", "Patient View"])
 
 # =========================
 # DOCTOR DASHBOARD
 # =========================
-with tab2:
-    st.header("Doctor Dashboard")
+if page == "Doctor Dashboard":
 
-    st.subheader("📌 Patient Overview")
+    st.header("👨‍⚕️ Doctor Dashboard")
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Total Patients", "3")
+    col2.metric("High Risk", "1")
+    col3.metric("Follow-ups Needed", "2")
+
+    st.divider()
+
+    st.subheader("📌 Patient List")
 
     for name, data in patients.items():
-        st.write(f"👤 {name} → **{data['risk']}**")
+        st.markdown(f"""
+        <div class="card">
+            <h4>{name}</h4>
+            <p>Risk Level: {data['risk']}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.divider()
 
     selected = st.selectbox("Select Patient", list(patients.keys()))
     p = patients[selected]
 
-    st.subheader(f"👤 Patient: {selected}")
+    st.subheader(f"👤 Patient Detail: {selected}")
 
     df = pd.DataFrame({
         "Month": ["Jan", "Mar", "May"],
-        "Memory": p["memory"],
-        "Attention": p["attention"]
+        "Memory": p["memory"]
     })
-
-    st.markdown("### 📈 Cognitive Timeline")
-    st.line_chart(df.set_index("Month"))
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### 🧠 MRI Summary")
-        st.info(p["mri"])
+        st.markdown("### 📊 Memory Trend")
+        st.line_chart(df.set_index("Month"))
 
     with col2:
-        st.markdown("### 🤖 AI Insight")
-        st.warning(ai_insight(selected))
+        st.markdown("### 🧠 Clinical Status")
+        st.info(f"Risk Level: {p['risk']}")
+        st.warning("Gradual cognitive change detected")
+
+    st.markdown("### 📩 Actions")
+    st.button("Send Follow-up")
+    st.button("Schedule Visit")
+
+
+# =========================
+# PATIENT VIEW
+# =========================
+else:
+
+    st.header("👤 Patient Portal")
+
+    st.markdown("### 🧠 Your Cognitive Status")
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Memory Score", "78")
+    col2.metric("Attention", "85")
+    col3.metric("Risk", "🟡 Monitor")
 
     st.divider()
 
-    st.markdown("### 📨 Follow-up System")
+    st.markdown("### 💬 AI Explanation")
 
-    action = st.selectbox(
-        "Choose action",
-        [
-            "Repeat cognitive test in 3 weeks",
-            "Schedule clinic visit",
-            "No action needed"
-        ]
-    )
+    st.info("""
+Your cognitive patterns show mild changes over time.
+This does NOT indicate a diagnosis.
+We recommend periodic monitoring and follow-up evaluation.
+""")
 
-    if st.button("Send Follow-up"):
-        st.success(f"Follow-up sent to {selected}: {action}")
+    st.markdown("### 📅 Next Step")
+    st.success("Repeat assessment in 3 months")
+    
